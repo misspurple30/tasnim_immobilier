@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useData } from "@/lib/data-context"
 
 import ProprietairesTab from "./components/proprietaires-tab"
 import ProprietesTab from "./components/proprietes-tab"
@@ -18,11 +19,12 @@ import RapportsTab from "./components/rapports-tab"
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
+  const { stats, activities, loadDemoData, clearAllData } = useData()
 
-  const stats = [
+  const statsCards = [
     {
       title: "Propriétés totales",
-      value: "0",
+      value: stats.totalProprietes.toString(),
       change: "+0%",
       icon: Building,
       color: "text-indigo-600",
@@ -30,7 +32,7 @@ export default function Dashboard() {
     },
     {
       title: "Locations actives",
-      value: "0",
+      value: stats.locationsActives.toString(),
       change: "+0%",
       icon: Home,
       color: "text-emerald-600",
@@ -38,7 +40,7 @@ export default function Dashboard() {
     },
     {
       title: "Recettes du mois",
-      value: "0 FCFA",
+      value: `${stats.recettesMois.toLocaleString()} FCFA`,
       change: "+0%",
       icon: DollarSign,
       color: "text-amber-600",
@@ -46,7 +48,7 @@ export default function Dashboard() {
     },
     {
       title: "Locataires",
-      value: "0",
+      value: stats.totalLocataires.toString(),
       change: "+0%",
       icon: Users,
       color: "text-violet-600",
@@ -54,7 +56,7 @@ export default function Dashboard() {
     },
   ]
 
-  const recentActivities: any[] = []
+  const recentActivities = activities
 
   const Navigation = () => (
     <nav className="grid items-start px-4 text-sm font-medium">
@@ -184,7 +186,7 @@ export default function Dashboard() {
 
               {/* Stats Cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat, index) => (
+                {statsCards.map((stat, index) => (
                   <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
@@ -292,6 +294,42 @@ export default function Dashboard() {
                     </Button>
                   </CardContent>
                 </Card>
+              </div>
+
+              {/* Section données de démonstration */}
+              {stats.totalProprietes === 0 && (
+                <Card className="border-dashed border-2 border-gray-300">
+                  <CardHeader>
+                    <CardTitle>Données de démonstration</CardTitle>
+                    <CardDescription>
+                      Chargez des données d'exemple pour découvrir les fonctionnalités de l'application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button
+                      onClick={loadDemoData}
+                      className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-0"
+                    >
+                      📊 Charger les données de démonstration
+                    </Button>
+                    <p className="text-sm text-gray-500 text-center">
+                      Cela ajoutera des propriétaires, propriétés, locataires et contrats d'exemple
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {stats.totalProprietes > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={clearAllData}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    🗑️ Effacer toutes les données
+                  </Button>
+                </div>
+              )}
               </div>
             </div>
           )}
