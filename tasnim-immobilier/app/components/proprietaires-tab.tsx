@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Search, Edit, Eye, MoreHorizontal } from "lucide-react"
+import { Plus, Search, Edit, Eye, MoreHorizontal, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,20 +19,90 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useData } from "@/lib/data-context"
+import { useToast } from "@/components/ui/use-toast"
+import { Proprietaire } from "@/lib/types"
 
 export default function ProprietairesTab() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-
-  const [selectedProprietaire, setSelectedProprietaire] = useState<any>(null)
+  const [selectedProprietaire, setSelectedProprietaire] = useState<Proprietaire | null>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  
+  // Formulaire
+  const [formData, setFormData] = useState({
+    civilite: '',
+    nom: '',
+    prenoms: '',
+    contact: '',
+    email: '',
+    adresse: ''
+  })
 
-  const proprietaires: any[] = []
+  const { proprietaires, addProprietaire, updateProprietaire, deleteProprietaire } = useData()
+  const { toast } = useToast()
 
   const filteredProprietaires = proprietaires.filter((prop) =>
     `${prop.nom} ${prop.prenoms}`.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const resetForm = () => {
+    setFormData({
+      civilite: '',
+      nom: '',
+      prenoms: '',
+      contact: '',
+      email: '',
+      adresse: ''
+    })
+  }
+
+  const handleSubmit = () => {
+    if (!formData.civilite || !formData.nom || !formData.prenoms || !formData.contact) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      })
+      return
+    }
+
+    addProprietaire(formData)
+    resetForm()
+    setIsAddDialogOpen(false)
+    toast({
+      title: "Succès",
+      description: "Propriétaire ajouté avec succès",
+    })
+  }
+
+  const handleUpdate = () => {
+    if (!selectedProprietaire) return
+    
+    updateProprietaire(selectedProprietaire.id, {
+      civilite: formData.civilite as 'M.' | 'Mme' | 'Mlle',
+      nom: formData.nom,
+      prenoms: formData.prenoms,
+      contact: formData.contact,
+      email: formData.email,
+      adresse: formData.adresse
+    })
+    
+    setIsEditDialogOpen(false)
+    toast({
+      title: "Succès",
+      description: "Propriétaire modifié avec succès",
+    })
+  }
+
+  const handleDelete = (proprietaire: Proprietaire) => {
+    deleteProprietaire(proprietaire.id)
+    toast({
+      title: "Suppression",
+      description: `${proprietaire.civilite} ${proprietaire.nom} ${proprietaire.prenoms} a été supprimé`,
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -56,8 +126,8 @@ export default function ProprietairesTab() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="civilite">Civilité</Label>
-                  <Select>
+                  <Label htmlFor="civilite">Civilité *</Label>
+                  <Select value={formData.civilite} onValueChange={(value) => setFormData({...formData, civilite: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
@@ -69,34 +139,63 @@ export default function ProprietairesTab() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nom">Nom</Label>
-                  <Input id="nom" placeholder="Nom de famille" />
+                  <Label htmlFor="nom">Nom *</Label>
+                  <Input 
+                    id="nom" 
+                    placeholder="Nom de famille" 
+                    value={formData.nom}
+                    onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2 col-span-2">
-                  <Label htmlFor="prenoms">Prénoms</Label>
-                  <Input id="prenoms" placeholder="Prénoms" />
+                  <Label htmlFor="prenoms">Prénoms *</Label>
+                  <Input 
+                    id="prenoms" 
+                    placeholder="Prénoms" 
+                    value={formData.prenoms}
+                    onChange={(e) => setFormData({...formData, prenoms: e.target.value})}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contact">Contact</Label>
-                  <Input id="contact" placeholder="+225 XX XX XX XX" />
+                  <Label htmlFor="contact">Contact *</Label>
+                  <Input 
+                    id="contact" 
+                    placeholder="+225 XX XX XX XX" 
+                    value={formData.contact}
+                    onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="email@exemple.com" />
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="email@exemple.com" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="adresse">Adresse complète</Label>
-                <Input id="adresse" placeholder="Adresse complète" />
+                <Input 
+                  id="adresse" 
+                  placeholder="Adresse complète" 
+                  value={formData.adresse}
+                  onChange={(e) => setFormData({...formData, adresse: e.target.value})}
+                />
               </div>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsAddDialogOpen(false)
+                resetForm()
+              }}>
                 Annuler
               </Button>
-              <Button onClick={() => setIsAddDialogOpen(false)}>Enregistrer</Button>
+              <Button onClick={handleSubmit}>Enregistrer</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -170,7 +269,7 @@ export default function ProprietairesTab() {
                 <div className="grid grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-civilite">Civilité</Label>
-                    <Select defaultValue={selectedProprietaire.civilite}>
+                    <Select value={formData.civilite} onValueChange={(value) => setFormData({...formData, civilite: value})}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -183,26 +282,49 @@ export default function ProprietairesTab() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-nom">Nom</Label>
-                    <Input id="edit-nom" defaultValue={selectedProprietaire.nom} />
+                    <Input 
+                      id="edit-nom" 
+                      value={formData.nom}
+                      onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="edit-prenoms">Prénoms</Label>
-                    <Input id="edit-prenoms" defaultValue={selectedProprietaire.prenoms} />
+                    <Input 
+                      id="edit-prenoms" 
+                      value={formData.prenoms}
+                      onChange={(e) => setFormData({...formData, prenoms: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-contact">Contact</Label>
-                    <Input id="edit-contact" defaultValue={selectedProprietaire.contact} />
+                    <Input 
+                      id="edit-contact" 
+                      value={formData.contact}
+                      onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-email">Email</Label>
-                    <Input id="edit-email" type="email" placeholder="email@exemple.com" />
+                    <Input 
+                      id="edit-email" 
+                      type="email" 
+                      placeholder="email@exemple.com" 
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-adresse">Adresse complète</Label>
-                  <Input id="edit-adresse" placeholder="Adresse complète" />
+                  <Input 
+                    id="edit-adresse" 
+                    placeholder="Adresse complète" 
+                    value={formData.adresse}
+                    onChange={(e) => setFormData({...formData, adresse: e.target.value})}
+                  />
                 </div>
               </div>
             )}
@@ -210,12 +332,7 @@ export default function ProprietairesTab() {
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Annuler
               </Button>
-              <Button
-                onClick={() => {
-                  // Logique de sauvegarde ici
-                  setIsEditDialogOpen(false)
-                }}
-              >
+              <Button onClick={handleUpdate}>
                 Sauvegarder
               </Button>
             </div>
@@ -299,11 +416,26 @@ export default function ProprietairesTab() {
                           <DropdownMenuItem
                             onClick={() => {
                               setSelectedProprietaire(proprietaire)
+                              setFormData({
+                                civilite: proprietaire.civilite,
+                                nom: proprietaire.nom,
+                                prenoms: proprietaire.prenoms,
+                                contact: proprietaire.contact,
+                                email: proprietaire.email || '',
+                                adresse: proprietaire.adresse || ''
+                              })
                               setIsEditDialogOpen(true)
                             }}
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(proprietaire)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Supprimer
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
